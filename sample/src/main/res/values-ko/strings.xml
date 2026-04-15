@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Compose WheelPicker</string>
+    <string name="hour_suffix">시</string>
+    <string name="minute_suffix">분</string>
+</resources>
