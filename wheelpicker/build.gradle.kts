@@ -17,7 +17,6 @@ android {
 
     defaultConfig {
         minSdk = 28
-        consumerProguardFiles("consumer-rules.pro")
     }
 
     buildTypes {
@@ -57,7 +56,7 @@ mavenPublishing {
     coordinates(
         groupId = "ai.asleep",
         artifactId = "compose-wheelpicker",
-        version = "0.1.0",
+        version = project.findProperty("VERSION_NAME")?.toString() ?: "0.1.0-SNAPSHOT",
     )
 
     pom {
@@ -69,7 +68,7 @@ mavenPublishing {
         licenses {
             license {
                 name.set("The Apache License, Version 2.0")
-                url.set("http://www.apache.org/licenses/LICENSE-2.0.txt")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
             }
         }
 
@@ -82,7 +81,7 @@ mavenPublishing {
         }
 
         scm {
-            connection.set("scm:git:git://github.com/asleep-ai/compose-wheelpicker.git")
+            connection.set("scm:git:https://github.com/asleep-ai/compose-wheelpicker.git")
             developerConnection.set("scm:git:ssh://github.com/asleep-ai/compose-wheelpicker.git")
             url.set("https://github.com/asleep-ai/compose-wheelpicker")
         }
