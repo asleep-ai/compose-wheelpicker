@@ -1,5 +1,8 @@
 # compose-wheelpicker
 
+[![Maven Central](https://img.shields.io/maven-central/v/ai.asleep/compose-wheelpicker)](https://central.sonatype.com/artifact/ai.asleep/compose-wheelpicker)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+
 iOS-style wheel picker components for Jetpack Compose — a generic `WheelPicker` and a composite `TimePicker`.
 
 ## Modules
@@ -82,10 +85,22 @@ Item height is auto-derived from the parent height (when bounded) or from the te
 | `cylindrical` | `true` | Apply 3D cylinder transform. |
 | `fadeEdges` | `true` | Fade the top/bottom edges of the wheel. |
 
-## Integration
+## Installation
 
-Until this is published, consume via source inclusion or a local Maven publish. TBD.
+Available on Maven Central. Requires Android `minSdk 28+` and Jetpack Compose.
+
+```kotlin
+dependencies {
+    implementation("ai.asleep:compose-wheelpicker:0.1.0")
+}
+```
+
+Browse releases on [Maven Central](https://central.sonatype.com/artifact/ai.asleep/compose-wheelpicker) · [mvnrepository](https://mvnrepository.com/artifact/ai.asleep/compose-wheelpicker).
 
 ## Running the sample
 
 Open in Android Studio and run the `:sample` module on a device/emulator (minSdk 28).
+
+## License
+
+[Apache License 2.0](LICENSE)
