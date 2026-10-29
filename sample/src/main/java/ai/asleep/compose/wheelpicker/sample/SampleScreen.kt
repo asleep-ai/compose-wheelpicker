@@ -291,6 +291,10 @@ private fun TimePickerControls(
             }
         }
 
+        // AM/PM position only matters in 12-hour mode; SYSTEM can resolve to 24-hour.
+        val context = LocalContext.current
+        val is24Hour = format == TimeFormat.HOUR_24 ||
+            (format == TimeFormat.SYSTEM && android.text.format.DateFormat.is24HourFormat(context))
         ControlLabel("AM/PM position")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             PeriodPosition.entries.forEach { option ->
@@ -298,7 +302,7 @@ private fun TimePickerControls(
                     selected = periodPosition == option,
                     onClick = { onPeriodPositionChange(option) },
                     label = { Text(option.name) },
-                    enabled = format != TimeFormat.HOUR_24,
+                    enabled = !is24Hour,
                     colors = FilterChipDefaults.filterChipColors(),
                 )
             }
