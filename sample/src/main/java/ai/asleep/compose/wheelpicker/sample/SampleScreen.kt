@@ -87,8 +87,8 @@ fun SampleScreen(
 
 @Composable
 private fun TimePickerTab() {
-    var format by remember { mutableStateOf(TimeFormat.HOUR_12) }
-    var periodPosition by remember { mutableStateOf(PeriodPosition.START) }
+    var format by remember { mutableStateOf(TimeFormat.SYSTEM) }
+    var periodPosition by remember { mutableStateOf(PeriodPosition.LOCALE) }
     var showIndicator by remember { mutableStateOf(true) }
     var useLocalizedSuffixes by remember { mutableStateOf(false) }
     var visibleItemCount by remember { mutableIntStateOf(3) }

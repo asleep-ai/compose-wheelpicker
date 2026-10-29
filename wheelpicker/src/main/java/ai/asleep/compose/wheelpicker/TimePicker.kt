@@ -46,9 +46,9 @@ import java.util.Locale
  * @param visibleItemCount 각 휠에 보일 아이템 개수 (중앙 정렬을 위해 홀수만 허용).
  * @param itemHeight 아이템 하나의 높이. null이면 텍스트 스타일에서 자동으로 계산한다.
  * @param format 12/24 시간제. [TimeFormat.HOUR_24]면 AM/PM 휠이 숨겨진다.
- *   [TimeFormat.SYSTEM]이면 기기 설정(사용자가 고른 값, 없으면 로케일 관례)을 따른다.
+ *   기본 [TimeFormat.SYSTEM]은 기기 설정(사용자가 고른 값, 없으면 로케일 관례)을 따른다.
  * @param periodPosition AM/PM 휠의 위치. 12시간제일 때만 유효.
- *   [PeriodPosition.LOCALE]이면 [locale]의 시간 패턴에서 오전/오후가 시 앞인지 뒤인지로 정한다.
+ *   기본 [PeriodPosition.LOCALE]은 [locale]의 시간 패턴에서 오전/오후가 시 앞인지 뒤인지로 정한다.
  * @param locale AM/PM 표기와 기본 숫자 포맷에 사용할 로케일. 기본은 시스템 로케일.
  * @param hourFormatter 시 숫자를 문자열로 변환하는 함수. null이면 12시간제는 "1".."12", 24시간제는 "00".."23"
  *   ([locale]의 숫자 모양). [TimeFormat.SYSTEM]이면 시 앞 0도 플랫폼처럼 [locale]의 시간 패턴을 따른다
@@ -72,8 +72,8 @@ public fun TimePicker(
     modifier: Modifier = Modifier,
     visibleItemCount: Int = 3,
     itemHeight: Dp? = null,
-    format: TimeFormat = TimeFormat.HOUR_12,
-    periodPosition: PeriodPosition = PeriodPosition.START,
+    format: TimeFormat = TimeFormat.SYSTEM,
+    periodPosition: PeriodPosition = PeriodPosition.LOCALE,
     locale: Locale = Locale.getDefault(),
     hourFormatter: ((Int) -> String)? = null,
     minuteFormatter: ((Int) -> String)? = null,
