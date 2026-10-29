@@ -278,7 +278,15 @@ private fun TimePickerControls(
                 FilterChip(
                     selected = format == option,
                     onClick = { onFormatChange(option) },
-                    label = { Text(if (option == TimeFormat.HOUR_12) "12h" else "24h") },
+                    label = {
+                        Text(
+                            when (option) {
+                                TimeFormat.HOUR_12 -> "12h"
+                                TimeFormat.HOUR_24 -> "24h"
+                                TimeFormat.SYSTEM -> "System"
+                            }
+                        )
+                    },
                 )
             }
         }
@@ -290,7 +298,7 @@ private fun TimePickerControls(
                     selected = periodPosition == option,
                     onClick = { onPeriodPositionChange(option) },
                     label = { Text(option.name) },
-                    enabled = format == TimeFormat.HOUR_12,
+                    enabled = format != TimeFormat.HOUR_24,
                     colors = FilterChipDefaults.filterChipColors(),
                 )
             }

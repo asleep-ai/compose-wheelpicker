@@ -70,10 +70,10 @@ TimePicker(
 | `onTimeChange` | — | Called whenever the selected time settles. |
 | `visibleItemCount` | `3` | Items visible in each wheel. Must be odd. |
 | `itemHeight` | `null` | Per-item height. `null` auto-derives from text styles. |
-| `format` | `HOUR_12` | `HOUR_12` or `HOUR_24`. In `HOUR_24`, the AM/PM wheel is hidden. |
-| `periodPosition` | `START` | `START` or `END`. Position of the AM/PM wheel (12-hour only). |
+| `format` | `HOUR_12` | `HOUR_12`, `HOUR_24`, or `SYSTEM` (the device's 12/24-hour setting, falling back to the locale's convention). In 24-hour mode the AM/PM wheel is hidden. |
+| `periodPosition` | `START` | `START`, `END`, or `LOCALE` (before or after the hour, as in `locale`'s 12-hour pattern). Position of the AM/PM wheel (12-hour only). |
 | `locale` | system default | Used for AM/PM labels and default number formatting. |
-| `hourFormatter` / `minuteFormatter` | `null` | Override for hour/minute label strings. |
+| `hourFormatter` / `minuteFormatter` | `null` | Override for hour/minute label strings. By default the hour is `7` in 12-hour and `07` in 24-hour mode; with `SYSTEM` the leading zero follows `locale`'s time pattern, as the platform `TimePicker` does (`hh`/`HH` → `07`, `h`/`H` → `7`). With `SYSTEM` in 12-hour mode, a `K` pattern (e.g. Japanese `aK:mm`) shows hours `0`–`11` like the platform picker (AM 0 = 00:00, PM 0 = 12:00). Minutes are always two digits. |
 | `separator` | `":"` | Text drawn between hour and minute wheels. `null` hides it. |
 | `dividerThickness` | `1.dp` | Top/bottom selection indicator thickness. `null` hides the indicator. |
 | `cylindrical` | `true` | Apply 3D cylinder transform to each wheel. |
