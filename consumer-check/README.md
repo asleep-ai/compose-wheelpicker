@@ -10,7 +10,15 @@ It checks that the published artifact
 
 ```sh
 ./gradlew :wheelpicker:publishToMavenLocal -PVERSION_NAME=0.0.0-consumer-check -PRELEASE_SIGNING_ENABLED=false
-gradle -p consumer-check verifyResolvedVersions :app:assembleDebug   # Gradle 8.7
+gradle -p consumer-check -PwheelpickerVersion=0.0.0-consumer-check :app:verifyResolvedVersions :app:assembleDebug   # Gradle 8.7
 ```
 
 CI runs this in the `consumer-check` job.
+
+`PickerInteractionTest` drags `WheelPicker` and `TimePicker` and checks that the callbacks reach the app. Run it locally on an API 26 (minSdk) emulator:
+
+```sh
+gradle -p consumer-check -PwheelpickerVersion=0.0.0-consumer-check :app:connectedDebugAndroidTest
+```
+
+CI does not run it because it needs an emulator.
