@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <application android:label="consumer-check">
+    <!-- No action bar: with targetSdk 35, Android 15+ enforces edge-to-edge, and the content
+         would draw under a framework action bar. Insets are handled in MainActivity. -->
+    <application
+        android:label="consumer-check"
+        android:theme="@android:style/Theme.Material.Light.NoActionBar">
         <activity
             android:name=".MainActivity"
             android:exported="true">

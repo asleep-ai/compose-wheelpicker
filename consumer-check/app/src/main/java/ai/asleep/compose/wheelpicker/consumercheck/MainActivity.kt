@@ -6,8 +6,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import java.time.LocalTime
 
@@ -17,7 +19,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             MaterialTheme {
-                Column {
+                // Edge-to-edge is enforced on Android 15+ (targetSdk 35), so keep content out of the bars.
+                Column(modifier = Modifier.safeDrawingPadding()) {
                     Text("compose-wheelpicker consumer check")
                     WheelPicker(
                         items = (0..12).map { "$it" },
