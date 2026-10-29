@@ -59,6 +59,7 @@ import kotlin.math.sin
  * @param repeatable true면 무한 스크롤(끝나면 처음으로).
  * @param textStyle 아이템 텍스트 스타일.
  * @param textColor 아이템 텍스트 컬러 (중앙 기준, 가장자리로 갈수록 투명해짐).
+ *   [textStyle]의 color보다 우선한다.
  * @param cylindrical true면 원통형 3D 변환을 적용한다.
  * @param fadeEdges true면 위/아래 가장자리를 그라데이션으로 페이드아웃한다.
  */
@@ -207,6 +208,7 @@ public fun WheelPicker(
             ) {
                 Text(
                     text = items[index % items.size],
+                    color = textColor,
                     style = textStyle
                 )
             }
