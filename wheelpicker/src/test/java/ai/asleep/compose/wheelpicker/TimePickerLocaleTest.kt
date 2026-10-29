@@ -11,25 +11,25 @@ class TimePickerLocaleTest {
     // Patterns are what DateFormat.getBestDateTimePattern(locale, "hm") returns on Android (CLDR).
     @Test
     fun periodBeforeHour_isStart() {
-        assertEquals(PeriodPosition.START, periodPositionOf("a h:mm")) // ko
-        assertEquals(PeriodPosition.START, periodPositionOf("aK:mm")) // ja
+        assertEquals(PeriodPosition.START, parseTimePattern("a h:mm").periodPosition) // ko
+        assertEquals(PeriodPosition.START, parseTimePattern("aK:mm").periodPosition) // ja
     }
 
     @Test
     fun periodAfterHour_isEnd() {
-        assertEquals(PeriodPosition.END, periodPositionOf("h:mm a")) // en, hi, es, fr, id
-        assertEquals(PeriodPosition.END, periodPositionOf("h:mm B"))
+        assertEquals(PeriodPosition.END, parseTimePattern("h:mm a").periodPosition) // en, hi, es, fr, id
+        assertEquals(PeriodPosition.END, parseTimePattern("h:mm B").periodPosition)
     }
 
     @Test
     fun quotedLettersAreIgnored() {
-        assertEquals(PeriodPosition.END, periodPositionOf("'a' h:mm a"))
-        assertEquals(PeriodPosition.START, periodPositionOf("a 'h' h:mm"))
+        assertEquals(PeriodPosition.END, parseTimePattern("'a' h:mm a").periodPosition)
+        assertEquals(PeriodPosition.START, parseTimePattern("a 'h' h:mm").periodPosition)
     }
 
     @Test
     fun noPeriodSymbol_fallsBackToStart() {
-        assertEquals(PeriodPosition.START, periodPositionOf("HH:mm"))
+        assertEquals(PeriodPosition.START, parseTimePattern("HH:mm").periodPosition)
     }
 
     @Test
@@ -54,19 +54,19 @@ class TimePickerLocaleTest {
 
     @Test
     fun hourDigits_followPatternLetterCount() {
-        assertEquals(true, hourHasTwoDigits("HH:mm"))
-        assertEquals(true, hourHasTwoDigits("hh:mm a"))
-        assertEquals(true, hourHasTwoDigits("kk:mm"))
-        assertEquals(false, hourHasTwoDigits("H:mm"))
-        assertEquals(false, hourHasTwoDigits("a h:mm"))
-        assertEquals(false, hourHasTwoDigits("aK:mm"))
-        assertEquals(false, hourHasTwoDigits("mm")) // 시 글자 없음
+        assertEquals(true, parseTimePattern("HH:mm").hourTwoDigits)
+        assertEquals(true, parseTimePattern("hh:mm a").hourTwoDigits)
+        assertEquals(true, parseTimePattern("kk:mm").hourTwoDigits)
+        assertEquals(false, parseTimePattern("H:mm").hourTwoDigits)
+        assertEquals(false, parseTimePattern("a h:mm").hourTwoDigits)
+        assertEquals(false, parseTimePattern("aK:mm").hourTwoDigits)
+        assertEquals(false, parseTimePattern("mm").hourTwoDigits) // 시 글자 없음
     }
 
     @Test
     fun hourDigits_quotedLettersAreIgnored() {
-        assertEquals(true, hourHasTwoDigits("'h' HH:mm"))
-        assertEquals(false, hourHasTwoDigits("'hh' H:mm"))
+        assertEquals(true, parseTimePattern("'h' HH:mm").hourTwoDigits)
+        assertEquals(false, parseTimePattern("'hh' H:mm").hourTwoDigits)
     }
 
     /**
@@ -76,7 +76,7 @@ class TimePickerLocaleTest {
     @Test
     fun systemHour_followsLocalePattern() {
         fun hour(tag: String, pattern: String, h: Int = 7) =
-            defaultHourFormatter(hourHasTwoDigits(pattern), Locale.forLanguageTag(tag))(h)
+            defaultHourFormatter(parseTimePattern(pattern).hourTwoDigits, Locale.forLanguageTag(tag))(h)
 
         // 12시간제: 9개 로케일 모두 시 글자가 한 글자라 0이 붙지 않는다
         assertEquals("7", hour("ko-KR", "a h:mm"))
@@ -100,18 +100,18 @@ class TimePickerLocaleTest {
         val locale = Locale.forLanguageTag("mr-IN")
         val zero = defaultMinuteFormatter(locale)(0)[0]
         // mr-IN 24시간제 패턴은 "H:mm" → 0 없이 한 자리, 숫자는 분과 같은 체계
-        assertEquals((zero + 7).toString(), defaultHourFormatter(hourHasTwoDigits("H:mm"), locale)(7))
+        assertEquals((zero + 7).toString(), defaultHourFormatter(parseTimePattern("H:mm").hourTwoDigits, locale)(7))
     }
 
     @Test
     fun hourStartsAtZero_onlyForK() {
-        assertEquals(true, hourStartsAtZero("aK:mm")) // ja
-        assertEquals(true, hourStartsAtZero("aKK:mm"))
-        assertEquals(false, hourStartsAtZero("a h:mm")) // ko
-        assertEquals(false, hourStartsAtZero("h:mm a")) // en
-        assertEquals(false, hourStartsAtZero("'K' h:mm a"))
-        assertEquals(true, hourStartsAtZero("'h' aK:mm"))
-        assertEquals(false, hourStartsAtZero("mm"))
+        assertEquals(true, parseTimePattern("aK:mm").hourStartsAtZero) // ja
+        assertEquals(true, parseTimePattern("aKK:mm").hourStartsAtZero)
+        assertEquals(false, parseTimePattern("a h:mm").hourStartsAtZero) // ko
+        assertEquals(false, parseTimePattern("h:mm a").hourStartsAtZero) // en
+        assertEquals(false, parseTimePattern("'K' h:mm a").hourStartsAtZero)
+        assertEquals(true, parseTimePattern("'h' aK:mm").hourStartsAtZero)
+        assertEquals(false, parseTimePattern("mm").hourStartsAtZero)
     }
 
     /**
@@ -134,7 +134,7 @@ class TimePickerLocaleTest {
     }
 
     private fun assertRoundTrip(pattern: String, expected: Map<String, String>) {
-        val zero = hourStartsAtZero(pattern)
+        val zero = parseTimePattern(pattern).hourStartsAtZero
         expected.forEach { (text, label) ->
             val time = LocalTime.parse(text)
             val wheel = toWheel(time, zero)
