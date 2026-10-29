@@ -7,13 +7,26 @@ iOS-style wheel picker components for Jetpack Compose — a generic `WheelPicker
 
 ## Installation
 
-Available on Maven Central. Version 0.2.0 supports Android `minSdk 26+` and requires Jetpack Compose with Material 3. Version 0.1.0 requires `minSdk 28+`.
+Available on Maven Central.
 
 ```kotlin
 dependencies {
-    implementation("ai.asleep:compose-wheelpicker:0.2.0")
+    implementation("ai.asleep:compose-wheelpicker:0.3.0")
 }
 ```
+
+### Requirements
+
+Minimum app setup for 0.3.0:
+
+- `minSdk` 26, `compileSdk` 35
+- Kotlin 1.9.24 (Compose compiler 1.5.14) or newer
+- Compose 1.7.0 / material3 1.3.0 or newer
+- AGP 8.5.2 / Gradle 8.7 or newer
+
+0.2.0 and earlier pulled Kotlin 2.2 and Compose 1.10 into the app and needed `compileSdk` 36 (0.1.0 also needed `minSdk` 28).
+
+Since 0.3.0 the artifact is built with Kotlin `apiVersion`/`languageVersion` 1.9 and depends on `kotlin-stdlib` 1.9.24 and Compose BOM `2024.09.00`, so it works in apps that use Kotlin 1.9 with the Compose compiler 1.5.x and does not raise the app's Kotlin or Compose versions. The [`consumer-check`](consumer-check) build verifies this in CI.
 
 Browse releases on [Maven Central](https://central.sonatype.com/artifact/ai.asleep/compose-wheelpicker) · [mvnrepository](https://mvnrepository.com/artifact/ai.asleep/compose-wheelpicker).
 
@@ -22,7 +35,9 @@ Browse releases on [Maven Central](https://central.sonatype.com/artifact/ai.asle
 ## Modules
 
 - `:wheelpicker` — library module, exposes `WheelPicker` + `TimePicker` composables
-- `:sample` — demo app showcasing usage
+- `:sample` — demo app showcasing usage, on the latest Compose (compileSdk 36)
+- `:sample-floor` — the same demo built on the minimum supported versions (Compose 1.7.0 / material3 1.3.0, compileSdk 35)
+- `consumer-check/` — standalone app on the oldest supported toolchain (Kotlin 1.9.24, AGP 8.5.2) that consumes the published artifact
 
 ## Features
 

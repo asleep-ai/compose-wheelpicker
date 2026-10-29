@@ -1,5 +1,6 @@
 import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
 import com.vanniktech.maven.publish.SonatypeHost
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 
 plugins {
     alias(libs.plugins.android.library)
@@ -9,11 +10,8 @@ plugins {
 
 android {
     namespace = "ai.asleep.compose.wheelpicker"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    // Lowest compileSdk among consuming apps (med-apnotrack). Compose 1.7 needs 34.
+    compileSdk = 35
 
     defaultConfig {
         minSdk = 26
@@ -33,13 +31,23 @@ android {
     }
 }
 
+// Keep the published artifact readable by Kotlin 1.9 consumers:
+// metadata/API level 1.9 and a kotlin-stdlib 1.9.x dependency in the POM.
+kotlin {
+    coreLibrariesVersion = "1.9.24"
+    compilerOptions {
+        apiVersion.set(KotlinVersion.KOTLIN_1_9)
+        languageVersion.set(KotlinVersion.KOTLIN_1_9)
+    }
+}
+
 dependencies {
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.foundation)
-    implementation(libs.androidx.compose.material3)
-    debugImplementation(libs.androidx.compose.ui.tooling)
-    implementation(libs.androidx.compose.ui.tooling.preview)
+    // Floor versions, pinned directly (no BOM) so the POM only constrains what the library uses.
+    implementation(libs.floor.compose.ui)
+    implementation(libs.floor.compose.foundation)
+    implementation(libs.floor.compose.material3)
+    debugImplementation(libs.floor.compose.ui.tooling)
+    implementation(libs.floor.compose.ui.tooling.preview)
 }
 
 // Maven Central publishing — see .github/workflows/publish.yml for CI setup.
@@ -89,5 +97,9 @@ mavenPublishing {
 
     publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL)
 
-    signAllPublications()
+    // Release publishing (publish.yml) always provides the key. Without it (local or the
+    // consumer-check CI job publishing to mavenLocal) skip signing instead of failing.
+    if (providers.gradleProperty("signingInMemoryKey").isPresent) {
+        signAllPublications()
+    }
 }

@@ -36,7 +36,7 @@ jobs:
           log-accepted-android-sdk-licenses: false
 
       - name: Install compile SDK and build tools
-        run: sdkmanager 'platforms;android-36.1' 'build-tools;36.0.0'
+        run: sdkmanager 'platforms;android-35' 'platforms;android-36' 'build-tools;36.0.0'
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
@@ -48,9 +48,66 @@ jobs:
           ./gradlew
           :wheelpicker:lintDebug
           :sample:lintDebug
+          :sample-floor:lintDebug
           :wheelpicker:testDebugUnitTest
           :sample:testDebugUnitTest
           :wheelpicker:assembleRelease
           :sample:assembleDebug
+          :sample-floor:assembleDebug
           --no-configuration-cache
+          --console=plain
+
+  consumer-check:
+    # Builds the published artifact into an app with the oldest toolchain among the apps
+    # that use this library (med-apnotrack: AGP 8.5.2, Gradle 8.7, Kotlin 1.9.24,
+    # Compose compiler 1.5.14, compileSdk 35, Compose 1.7.2) and fails if the library
+    # raises the app's kotlin-stdlib or Compose versions.
+    name: Kotlin 1.9 consumer (AGP 8.5.2 / Gradle 8.7)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out source
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Java
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407 # v3
+        with:
+          packages: platform-tools
+          log-accepted-android-sdk-licenses: false
+
+      - name: Install compile SDK and build tools
+        run: sdkmanager 'platforms;android-35' 'build-tools;36.0.0' 'build-tools;34.0.0'
+
+      - name: Set up Gradle (library)
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+
+      - name: Publish library to mavenLocal
+        run: >-
+          ./gradlew :wheelpicker:publishToMavenLocal
+          -PVERSION_NAME=0.0.0-consumer-check
+          --no-configuration-cache
+          --console=plain
+
+      - name: Set up Gradle 8.7 (consumer)
+        uses: gradle/actions/setup-gradle@ed408507eac070d1f99cc633dbcf757c94c7933a # v4.4.3
+        with:
+          gradle-version: '8.7'
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+
+      - name: Build consumer app
+        run: >-
+          gradle -p consumer-check
+          -PwheelpickerVersion=0.0.0-consumer-check
+          :app:verifyResolvedVersions
+          :app:assembleDebug
           --console=plain
