@@ -15,6 +15,7 @@ android {
 
     defaultConfig {
         minSdk = 26
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -48,6 +49,12 @@ dependencies {
     implementation(libs.floor.compose.material3)
     debugImplementation(libs.floor.compose.ui.tooling)
     implementation(libs.floor.compose.ui.tooling.preview)
+
+    // Instrumented tests (connectedDebugAndroidTest); run on an API 26 (minSdk) emulator too.
+    androidTestImplementation(libs.floor.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    debugImplementation(libs.floor.compose.ui.test.manifest)
 }
 
 // Maven Central publishing — see .github/workflows/publish.yml for CI setup.

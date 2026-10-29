@@ -110,7 +110,7 @@ Item height is auto-derived from the parent height (when bounded) or from the te
 | `itemHeight` | `null` | Per-item height. `null` auto-resolves from parent height or text style. |
 | `repeatable` | `false` | Infinite scroll (wraps around). |
 | `textStyle` | `headlineLarge` | Item text style. |
-| `textColor` | `onSurface` | Item text color. |
+| `textColor` | `onSurface` | Item text color. Overrides `textStyle.color`. |
 | `cylindrical` | `true` | Apply 3D cylinder transform. |
 | `fadeEdges` | `true` | Fade the top/bottom edges of the wheel. |
 
