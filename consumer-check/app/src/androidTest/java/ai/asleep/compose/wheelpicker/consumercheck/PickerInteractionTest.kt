@@ -1,5 +1,6 @@
 package ai.asleep.compose.wheelpicker.consumercheck
 
+import ai.asleep.compose.wheelpicker.TimeFormat
 import ai.asleep.compose.wheelpicker.TimePicker
 import ai.asleep.compose.wheelpicker.WheelPicker
 import androidx.compose.material3.MaterialTheme
@@ -92,6 +93,8 @@ class PickerInteractionTest {
                     initialTime = LocalTime.of(7, 30),
                     onTimeChange = { time = it },
                     itemHeight = 48.dp,
+                    // Pin 12-hour so the hour reads "7" regardless of the device's 12/24-hour setting.
+                    format = TimeFormat.HOUR_12,
                 )
             }
         }
