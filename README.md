@@ -35,7 +35,9 @@ Browse releases on [Maven Central](https://central.sonatype.com/artifact/ai.asle
 ## Modules
 
 - `:wheelpicker` — library module, exposes `WheelPicker` + `TimePicker` composables
-- `:sample` — demo app showcasing usage
+- `:sample` — demo app showcasing usage, on the latest Compose (compileSdk 36)
+- `:sample-floor` — the same demo built on the minimum supported versions (Compose 1.7.0 / material3 1.3.0, compileSdk 35)
+- `consumer-check/` — standalone app on the oldest supported toolchain (Kotlin 1.9.24, AGP 8.5.2) that consumes the published artifact
 
 ## Features
 

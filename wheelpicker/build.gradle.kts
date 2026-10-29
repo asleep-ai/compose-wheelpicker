@@ -42,12 +42,12 @@ kotlin {
 }
 
 dependencies {
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.foundation)
-    implementation(libs.androidx.compose.material3)
-    debugImplementation(libs.androidx.compose.ui.tooling)
-    implementation(libs.androidx.compose.ui.tooling.preview)
+    // Floor versions, pinned directly (no BOM) so the POM only constrains what the library uses.
+    implementation(libs.floor.compose.ui)
+    implementation(libs.floor.compose.foundation)
+    implementation(libs.floor.compose.material3)
+    debugImplementation(libs.floor.compose.ui.tooling)
+    implementation(libs.floor.compose.ui.tooling.preview)
 }
 
 // Maven Central publishing — see .github/workflows/publish.yml for CI setup.

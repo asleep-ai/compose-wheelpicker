@@ -25,4 +25,5 @@ dependencyResolutionManagement {
 rootProject.name = "Compose WheelPicker"
 include(":wheelpicker")
 include(":sample")
+include(":sample-floor")
  

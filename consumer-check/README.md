@@ -9,7 +9,7 @@ It checks that the published artifact
 - does not raise the app's kotlin-stdlib or Compose versions.
 
 ```sh
-./gradlew :wheelpicker:publishToMavenLocal -PVERSION_NAME=0.0.0-consumer-check -PRELEASE_SIGNING_ENABLED=false
+./gradlew :wheelpicker:publishToMavenLocal -PVERSION_NAME=0.0.0-consumer-check
 gradle -p consumer-check -PwheelpickerVersion=0.0.0-consumer-check :app:verifyResolvedVersions :app:assembleDebug   # Gradle 8.7
 ```
 
