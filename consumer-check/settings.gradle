@@ -1,0 +1,23 @@
+// Standalone consumer that mirrors the oldest app toolchain using compose-wheelpicker
+// (med-apnotrack-app-android: AGP 8.5.2, Gradle 8.7, Kotlin 1.9.24, Compose compiler 1.5.14,
+// compileSdk 35, Compose 1.7.2). It resolves the library from mavenLocal, so run
+// `./gradlew :wheelpicker:publishToMavenLocal -PVERSION_NAME=<v>` first. See README.md.
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        mavenLocal {
+            content { includeGroup("ai.asleep") }
+        }
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = "consumer-check"
+include ":app"

@@ -7,7 +7,9 @@ espressoCore = "3.5.1"
 lifecycleRuntimeKtx = "2.6.1"
 activityCompose = "1.8.0"
 kotlin = "2.2.10"
-composeBom = "2026.02.01"
+# Floor for consumers: Compose 1.7.0 / material3 1.3.0 (Kotlin 1.9 + Compose compiler 1.5.x apps).
+# Do not raise without checking the consumer-check matrix; the BOM ends up in the published POM.
+composeBom = "2024.09.00"
 mavenPublish = "0.29.0"
 
 [libraries]
