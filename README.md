@@ -7,11 +7,11 @@ iOS-style wheel picker components for Jetpack Compose — a generic `WheelPicker
 
 ## Installation
 
-Available on Maven Central. Requires Android `minSdk 26+` and Jetpack Compose with Material 3.
+Available on Maven Central. Version 0.2.0 supports Android `minSdk 26+` and requires Jetpack Compose with Material 3. Version 0.1.0 requires `minSdk 28+`.
 
 ```kotlin
 dependencies {
-    implementation("ai.asleep:compose-wheelpicker:0.1.0")
+    implementation("ai.asleep:compose-wheelpicker:0.2.0")
 }
 ```
 
