@@ -25,6 +25,8 @@ import kotlinx.coroutines.flow.drop
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -44,10 +46,18 @@ import java.util.Locale
  * @param visibleItemCount 각 휠에 보일 아이템 개수 (중앙 정렬을 위해 홀수만 허용).
  * @param itemHeight 아이템 하나의 높이. null이면 텍스트 스타일에서 자동으로 계산한다.
  * @param format 12/24 시간제. [TimeFormat.HOUR_24]면 AM/PM 휠이 숨겨진다.
- * @param periodPosition AM/PM 휠의 위치. [TimeFormat.HOUR_12]일 때만 유효.
- * @param locale AM/PM 표기와 기본 숫자 포맷에 사용할 로케일. 기본은 시스템 로케일.
- * @param hourFormatter 시 숫자를 문자열로 변환하는 함수. null이면 12시간제는 "1".."12", 24시간제는 "00".."23".
- * @param minuteFormatter 분 숫자를 문자열로 변환하는 함수. null이면 "00".."59".
+ *   기본 [TimeFormat.SYSTEM]은 기기 설정(사용자가 고른 값, 없으면 로케일 관례)을 따른다.
+ *   기기의 12/24시간제 설정 변경은 Configuration 변경이 아니라서, 화면이 떠 있는 동안 바꾸면
+ *   다시 컴포즈될 때(화면 재진입 등)까지 반영되지 않는다. 플랫폼 `TimePicker`도 같다.
+ * @param periodPosition AM/PM 휠의 위치. 12시간제일 때만 유효.
+ *   기본 [PeriodPosition.LOCALE]은 [locale]의 시간 패턴에서 오전/오후가 시 앞인지 뒤인지로 정한다.
+ * @param locale AM/PM 표기, 기본 숫자 모양, 그리고 [TimeFormat.SYSTEM]·[PeriodPosition.LOCALE]일 때
+ *   시간 패턴(오전/오후 위치, 시 앞 0, `K`(0~11) 여부)에 쓰는 로케일. 기본은 시스템 로케일.
+ * @param hourFormatter 시 숫자를 문자열로 변환하는 함수. null이면 기본 [TimeFormat.SYSTEM]에서는 플랫폼처럼
+ *   [locale]의 시간 패턴을 따른다: 시 글자가 `hh`·`HH`처럼 두 글자면 "07", 한 글자면 "7".
+ *   12시간제에서 시 글자가 `K`(일본어 등)면 시 휠이 "0".."11"이 된다 (午前 0 = 00시, 午後 0 = 12시).
+ *   [TimeFormat.HOUR_12]는 "1".."12", [TimeFormat.HOUR_24]는 "00".."23". 숫자는 모두 [locale]의 숫자 모양.
+ * @param minuteFormatter 분 숫자를 문자열로 변환하는 함수. null이면 "00".."59" ([locale]의 숫자 모양).
  * @param hourTextStyle 시(hour) 텍스트 스타일.
  * @param minuteTextStyle 분(minute) 텍스트 스타일.
  * @param periodTextStyle AM/PM 텍스트 스타일.
@@ -65,8 +75,8 @@ public fun TimePicker(
     modifier: Modifier = Modifier,
     visibleItemCount: Int = 3,
     itemHeight: Dp? = null,
-    format: TimeFormat = TimeFormat.HOUR_12,
-    periodPosition: PeriodPosition = PeriodPosition.START,
+    format: TimeFormat = TimeFormat.SYSTEM,
+    periodPosition: PeriodPosition = PeriodPosition.LOCALE,
     locale: Locale = Locale.getDefault(),
     hourFormatter: ((Int) -> String)? = null,
     minuteFormatter: ((Int) -> String)? = null,
@@ -81,30 +91,49 @@ public fun TimePicker(
     fadeEdges: Boolean = true,
 ) {
     val localizedPeriods = remember(locale) { getLocalizedPeriods(locale) }
-    val initialHour = remember(format, initialTime) {
+    val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val is24Hour = remember(format, context, configuration) {
         when (format) {
-            TimeFormat.HOUR_12 -> when {
-                initialTime.hour == 0 -> 12
-                initialTime.hour > 12 -> initialTime.hour - 12
-                else -> initialTime.hour
-            }
-
-            TimeFormat.HOUR_24 -> initialTime.hour
+            TimeFormat.HOUR_12 -> false
+            TimeFormat.HOUR_24 -> true
+            TimeFormat.SYSTEM -> android.text.format.DateFormat.is24HourFormat(context)
         }
+    }
+    // 12시간제 패턴은 오전/오후 위치와 'K' 판단에 같이 쓰므로 필요할 때 한 번만 읽는다.
+    val pattern12 = remember(locale) { lazy { localeTimePattern(locale, is24Hour = false) } }
+    val periodAtStart = remember(periodPosition, pattern12) {
+        when (periodPosition) {
+            PeriodPosition.START -> true
+            PeriodPosition.END -> false
+            PeriodPosition.LOCALE -> pattern12.value.periodPosition == PeriodPosition.START
+        }
+    }
+    // 플랫폼 TimePicker처럼 12시간제 패턴의 시 글자가 'K'면 시 휠을 0..11로 둔다. HOUR_12는 항상 1..12.
+    val hourStartsAtZero = remember(format, is24Hour, pattern12) {
+        format == TimeFormat.SYSTEM && !is24Hour && pattern12.value.hourStartsAtZero
+    }
+    val initialHour = remember(is24Hour, hourStartsAtZero, initialTime) {
+        displayHourOf(initialTime.hour, is24Hour, hourStartsAtZero)
     }
     val initialPeriod = remember(initialTime) {
         if (initialTime.hour < 12) Period.AM else Period.PM
     }
 
-    var selectedHour by remember(format) { mutableIntStateOf(initialHour) }
+    var selectedHour by remember(is24Hour, hourStartsAtZero) { mutableIntStateOf(initialHour) }
     var selectedMinute by remember { mutableIntStateOf(initialTime.minute) }
     var selectedPeriod by remember { mutableStateOf(initialPeriod) }
 
-    val hourItems = remember(format, locale, hourFormatter) {
-        val range = if (format == TimeFormat.HOUR_12) 1..12 else 0..23
-        val resolved: (Int) -> String = hourFormatter ?: when (format) {
-            TimeFormat.HOUR_12 -> { h -> "$h" }
-            TimeFormat.HOUR_24 -> { h -> String.format(locale, "%02d", h) }
+    val hourItems = remember(is24Hour, hourStartsAtZero, format, locale, pattern12, hourFormatter) {
+        val range = hourRange(is24Hour, hourStartsAtZero)
+        val resolved: (Int) -> String = hourFormatter ?: run {
+            // HOUR_12·HOUR_24는 기존 기본값(12h "7", 24h "07")을 유지한다.
+            val twoDigits = when {
+                format != TimeFormat.SYSTEM -> is24Hour
+                is24Hour -> localeTimePattern(locale, is24Hour = true).hourTwoDigits
+                else -> pattern12.value.hourTwoDigits
+            }
+            defaultHourFormatter(twoDigits, locale)
         }
         range.map(resolved)
     }
@@ -112,18 +141,17 @@ public fun TimePicker(
         listOf(localizedPeriods.am, localizedPeriods.pm)
     }
     val minuteItems = remember(locale, minuteFormatter) {
-        val resolved: (Int) -> String = minuteFormatter
-            ?: { m -> String.format(locale, "%02d", m) }
+        val resolved: (Int) -> String = minuteFormatter ?: defaultMinuteFormatter(locale)
         (0..59).map(resolved)
     }
 
-    val hourInitialIndex = if (format == TimeFormat.HOUR_12) initialHour - 1 else initialHour
+    val firstHour = hourRange(is24Hour, hourStartsAtZero).first
+    val hourInitialIndex = initialHour - firstHour
     val minuteInitialIndex = initialTime.minute
     val periodInitialIndex = if (initialPeriod == Period.AM) 0 else 1
 
     // Stable callbacks so child WheelPickers can skip recomposition.
-    val onHourChange = remember(format) {
-        val firstHour = if (format == TimeFormat.HOUR_12) 1 else 0
+    val onHourChange = remember(firstHour) {
         { index: Int, _: String -> selectedHour = firstHour + index }
     }
     val onMinuteChange = remember<(Int, String) -> Unit> {
@@ -139,15 +167,9 @@ public fun TimePicker(
     // State reads happen inside the snapshot coroutine, not in composition — so
     // scrolling one wheel won't invalidate the parent and recompose others.
     val currentOnTimeChange by rememberUpdatedState(onTimeChange)
-    LaunchedEffect(format) {
+    LaunchedEffect(is24Hour, hourStartsAtZero) {
         snapshotFlow {
-            val hour24 = when (format) {
-                TimeFormat.HOUR_24 -> selectedHour
-                TimeFormat.HOUR_12 -> when (selectedPeriod) {
-                    Period.AM -> if (selectedHour == 12) 0 else selectedHour
-                    Period.PM -> if (selectedHour == 12) 12 else selectedHour + 12
-                }
-            }
+            val hour24 = hourOfDayOf(selectedHour, isPm = selectedPeriod == Period.PM, is24Hour)
             LocalTime.of(hour24, selectedMinute)
         }.drop(1).collect { currentOnTimeChange(it) }
     }
@@ -197,9 +219,9 @@ public fun TimePicker(
                 )
             }
 
-            if (format == TimeFormat.HOUR_12 && periodPosition == PeriodPosition.START) periodWheel()
+            if (!is24Hour && periodAtStart) periodWheel()
 
-            key(format) {
+            key(is24Hour, hourStartsAtZero) {
                 WheelPicker(
                     items = hourItems,
                     initialIndex = hourInitialIndex,
@@ -235,7 +257,7 @@ public fun TimePicker(
                 fadeEdges = fadeEdges,
             )
 
-            if (format == TimeFormat.HOUR_12 && periodPosition == PeriodPosition.END) periodWheel()
+            if (!is24Hour && !periodAtStart) periodWheel()
 
         }
     }
@@ -248,6 +270,13 @@ public enum class TimeFormat {
 
     /** 24시간제. AM/PM 휠이 숨겨진다. */
     HOUR_24,
+
+    /**
+     * 기기 설정을 따른다 ([android.text.format.DateFormat.is24HourFormat]).
+     * 사용자가 설정에서 12/24시간제를 골랐으면 그 값, 고르지 않았으면 앱 로케일의 관례.
+     * `hourFormatter`가 없으면 시 앞 0도 `locale`의 시간 패턴을 따른다(플랫폼 `TimePicker`와 같음).
+     */
+    SYSTEM,
 }
 
 /** 12시간제에서 AM/PM 휠이 표시될 위치. */
@@ -257,11 +286,94 @@ public enum class PeriodPosition {
 
     /** 시/분 뒤쪽(우측)에 표시. */
     END,
+
+    /**
+     * `locale`의 12시간제 패턴(`DateFormat.getBestDateTimePattern(locale, "hm")`)을 따른다.
+     * 오전/오후가 시보다 앞이면 [START], 뒤면 [END]. 예: ko·ja → START, en·es·hi → END.
+     */
+    LOCALE,
 }
 
 private enum class Period { AM, PM }
 
 private data class LocalizedPeriods(val am: String, val pm: String)
+
+/** 기본 시 표기. [twoDigits]면 "07", 아니면 "7" — 둘 다 [locale]의 숫자 모양. */
+internal fun defaultHourFormatter(twoDigits: Boolean, locale: Locale): (Int) -> String =
+    if (twoDigits) {
+        { h -> String.format(locale, "%02d", h) }
+    } else {
+        { h -> String.format(locale, "%d", h) }
+    }
+
+/** 기본 분 표기. "00".."59", [locale]의 숫자 모양. */
+internal fun defaultMinuteFormatter(locale: Locale): (Int) -> String =
+    { m -> String.format(locale, "%02d", m) }
+
+/** 시간 패턴에서 읽은 값. 플랫폼 `TimePicker`(spinner)와 같은 기준이다. */
+internal data class TimePattern(
+    /** 처음 나오는 시 글자(`h`·`H`·`K`·`k`). 없으면 null. */
+    val hourLetter: Char?,
+    /** 시 글자가 같은 글자 두 개(`hh`·`HH`…)면 true → "07". */
+    val hourTwoDigits: Boolean,
+    /** 오전/오후(`a`·`b`·`B`)가 시보다 앞이면 START, 뒤면 END. 오전/오후 기호가 없으면 START. */
+    val periodPosition: PeriodPosition,
+) {
+    /** 시 글자가 `K`(0~11)인지. AOSP `TimePickerSpinnerDelegate.updateHourControl`의 `mHourFormat == 'K'`와 같은 판단. */
+    val hourStartsAtZero: Boolean get() = hourLetter == 'K'
+}
+
+/** 시간 패턴을 한 번 훑어 [TimePattern]으로. 작은따옴표 안의 글자는 건너뛴다. */
+internal fun parseTimePattern(pattern: String): TimePattern {
+    var inQuote = false
+    var hourIndex = -1
+    var periodIndex = -1
+    pattern.forEachIndexed { i, c ->
+        if (c == '\'') {
+            inQuote = !inQuote
+        } else if (!inQuote) {
+            if (hourIndex < 0 && c in HOUR_LETTERS) hourIndex = i
+            if (periodIndex < 0 && c in PERIOD_LETTERS) periodIndex = i
+        }
+    }
+    val hourLetter = pattern.getOrNull(hourIndex)
+    return TimePattern(
+        hourLetter = hourLetter,
+        hourTwoDigits = hourLetter != null && pattern.getOrNull(hourIndex + 1) == hourLetter,
+        periodPosition = if (periodIndex >= 0 && hourIndex >= 0 && periodIndex > hourIndex) {
+            PeriodPosition.END
+        } else {
+            PeriodPosition.START
+        },
+    )
+}
+
+private const val HOUR_LETTERS = "hHKk"
+private const val PERIOD_LETTERS = "abB"
+
+/** `DateFormat.getBestDateTimePattern(locale, if (is24Hour) "Hm" else "hm")`을 읽는다. */
+private fun localeTimePattern(locale: Locale, is24Hour: Boolean): TimePattern =
+    parseTimePattern(android.text.format.DateFormat.getBestDateTimePattern(locale, if (is24Hour) "Hm" else "hm"))
+
+/**
+ * 시 휠에 보이는 범위. 24시간제 0..23, 12시간제는 [startsAtZero]면 0..11(`K`), 아니면 1..12(`h`).
+ */
+internal fun hourRange(is24Hour: Boolean, startsAtZero: Boolean): IntRange = when {
+    is24Hour -> 0..23
+    startsAtZero -> 0..11
+    else -> 1..12
+}
+
+/** 0..23시를 시 휠에 보일 숫자로. 12시간제에서 0시·12시는 [startsAtZero]면 0, 아니면 12. */
+internal fun displayHourOf(hourOfDay: Int, is24Hour: Boolean, startsAtZero: Boolean): Int {
+    if (is24Hour) return hourOfDay
+    val h = hourOfDay % 12
+    return if (h == 0 && !startsAtZero) 12 else h
+}
+
+/** 시 휠 숫자와 오전/오후를 0..23시로. 1..12와 0..11 둘 다 `% 12`로 같은 값이 된다. */
+internal fun hourOfDayOf(displayHour: Int, isPm: Boolean, is24Hour: Boolean): Int =
+    if (is24Hour) displayHour else displayHour % 12 + if (isPm) 12 else 0
 
 private fun getLocalizedPeriods(locale: Locale): LocalizedPeriods {
     val symbols = DateFormatSymbols.getInstance(locale).amPmStrings

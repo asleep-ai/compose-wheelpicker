@@ -48,6 +48,8 @@ dependencies {
     implementation(libs.floor.compose.material3)
     debugImplementation(libs.floor.compose.ui.tooling)
     implementation(libs.floor.compose.ui.tooling.preview)
+
+    testImplementation(libs.junit)
 }
 
 // Maven Central publishing — see .github/workflows/publish.yml for CI setup.

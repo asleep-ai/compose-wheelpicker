@@ -87,8 +87,8 @@ fun SampleScreen(
 
 @Composable
 private fun TimePickerTab() {
-    var format by remember { mutableStateOf(TimeFormat.HOUR_12) }
-    var periodPosition by remember { mutableStateOf(PeriodPosition.START) }
+    var format by remember { mutableStateOf(TimeFormat.SYSTEM) }
+    var periodPosition by remember { mutableStateOf(PeriodPosition.LOCALE) }
     var showIndicator by remember { mutableStateOf(true) }
     var useLocalizedSuffixes by remember { mutableStateOf(false) }
     var visibleItemCount by remember { mutableIntStateOf(3) }
@@ -278,11 +278,23 @@ private fun TimePickerControls(
                 FilterChip(
                     selected = format == option,
                     onClick = { onFormatChange(option) },
-                    label = { Text(if (option == TimeFormat.HOUR_12) "12h" else "24h") },
+                    label = {
+                        Text(
+                            when (option) {
+                                TimeFormat.HOUR_12 -> "12h"
+                                TimeFormat.HOUR_24 -> "24h"
+                                TimeFormat.SYSTEM -> "System"
+                            }
+                        )
+                    },
                 )
             }
         }
 
+        // AM/PM position only matters in 12-hour mode; SYSTEM can resolve to 24-hour.
+        val context = LocalContext.current
+        val is24Hour = format == TimeFormat.HOUR_24 ||
+            (format == TimeFormat.SYSTEM && android.text.format.DateFormat.is24HourFormat(context))
         ControlLabel("AM/PM position")
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             PeriodPosition.entries.forEach { option ->
@@ -290,7 +302,7 @@ private fun TimePickerControls(
                     selected = periodPosition == option,
                     onClick = { onPeriodPositionChange(option) },
                     label = { Text(option.name) },
-                    enabled = format == TimeFormat.HOUR_12,
+                    enabled = !is24Hour,
                     colors = FilterChipDefaults.filterChipColors(),
                 )
             }
