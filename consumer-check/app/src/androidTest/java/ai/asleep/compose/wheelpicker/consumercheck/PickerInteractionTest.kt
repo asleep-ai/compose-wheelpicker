@@ -1,5 +1,6 @@
 package ai.asleep.compose.wheelpicker.consumercheck
 
+import ai.asleep.compose.wheelpicker.HourCycle
 import ai.asleep.compose.wheelpicker.TimeFormat
 import ai.asleep.compose.wheelpicker.TimePicker
 import ai.asleep.compose.wheelpicker.WheelPicker
@@ -8,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTouchInput
@@ -15,6 +17,7 @@ import androidx.compose.ui.test.swipe
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.time.LocalTime
+import java.util.Locale
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -108,5 +111,55 @@ class PickerInteractionTest {
         assertNotNull(t)
         assertEquals(30, t!!.minute)
         assertTrue("expected hour < 7, was ${t.hour}", t.hour < 7)
+    }
+
+    @Test
+    fun timePicker_h24_showsMidnightAs24AndWrapsToEarlyHours() {
+        var time: LocalTime? = null
+        rule.setContent {
+            MaterialTheme {
+                TimePicker(
+                    initialTime = LocalTime.of(0, 30),
+                    onTimeChange = { time = it },
+                    itemHeight = 48.dp,
+                    locale = Locale.US,
+                    hourCycle = HourCycle.H24,
+                    modifier = Modifier.testTag("time"),
+                )
+            }
+        }
+
+        val pickerLeft = rule.onNodeWithTag("time").fetchSemanticsNode().boundsInRoot.left
+        val hourX = rule.onAllNodesWithText("24").fetchSemanticsNodes()
+            .minOf { it.boundsInRoot.center.x } - pickerLeft
+        rule.onNodeWithTag("time").performTouchInput {
+            val start = Offset(hourX, center.y)
+            swipe(start = start, end = start - Offset(0f, 72.dp.toPx()), durationMillis = 600)
+        }
+        rule.waitForIdle()
+
+        val t = time
+        assertNotNull(t)
+        assertEquals(30, t!!.minute)
+        assertTrue("expected hour in 1..3, was ${t.hour}", t.hour in 1..3)
+    }
+
+    @Test
+    fun timePicker_hourCycleOverridesFixedFormat_hourDigitsFollowLocale() {
+        rule.setContent {
+            MaterialTheme {
+                TimePicker(
+                    initialTime = LocalTime.of(7, 30),
+                    onTimeChange = {},
+                    itemHeight = 48.dp,
+                    format = TimeFormat.HOUR_24,
+                    locale = Locale.forLanguageTag("es-ES"),
+                    hourCycle = HourCycle.H23,
+                )
+            }
+        }
+
+        rule.onNodeWithText("7").assertExists()
+        rule.onNodeWithText("07").assertDoesNotExist()
     }
 }

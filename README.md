@@ -78,6 +78,7 @@ TimePicker(
 | `dividerThickness` | `1.dp` | Top/bottom selection indicator thickness. `null` hides the indicator. |
 | `cylindrical` | `true` | Apply 3D cylinder transform to each wheel. |
 | `fadeEdges` | `true` | Fade the top/bottom edges of each wheel. |
+| `hourCycle` | `null` | `H11` (`0`–`11`), `H12` (`1`–`12`), `H23` (`0`–`23`), or `H24` (`1`–`24`, midnight is `24`). When set, it overrides `format` and the device's 12/24-hour setting (the device setting is not read), and the hour's leading zero follows `locale`'s time pattern as with `SYSTEM`. The AM/PM position still follows `periodPosition`. Use it when the app already decides the hour cycle (for example from the app's language and its own policy). `null` keeps `format`. |
 
 The defaults follow the device and locale like the platform `TimePicker`. To keep the previous layout (always 12-hour, AM/PM first), pass `format = TimeFormat.HOUR_12, periodPosition = PeriodPosition.START`.
 

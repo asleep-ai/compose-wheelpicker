@@ -1,6 +1,7 @@
 package ai.asleep.compose.wheelpicker
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalTime
@@ -120,26 +121,26 @@ class TimePickerLocaleTest {
      */
     private data class Wheel(val hourIndex: Int, val periodIndex: Int, val label: String)
 
-    private fun toWheel(time: LocalTime, startsAtZero: Boolean): Wheel {
-        val display = displayHourOf(time.hour, is24Hour = false, startsAtZero)
-        val range = hourRange(is24Hour = false, startsAtZero)
+    private fun toWheel(time: LocalTime, cycle: HourCycle): Wheel {
+        val display = displayHourOf(time.hour, cycle)
+        val range = hourRange(cycle)
         assertTrue("$display !in $range", display in range)
         val periodIndex = if (time.hour < 12) 0 else 1
         return Wheel(display - range.first, periodIndex, "${if (periodIndex == 0) "AM" else "PM"} $display")
     }
 
-    private fun fromWheel(w: Wheel, minute: Int, startsAtZero: Boolean): LocalTime {
-        val display = hourRange(is24Hour = false, startsAtZero).first + w.hourIndex
-        return LocalTime.of(hourOfDayOf(display, isPm = w.periodIndex == 1, is24Hour = false), minute)
+    private fun fromWheel(w: Wheel, minute: Int, cycle: HourCycle): LocalTime {
+        val display = hourRange(cycle).first + w.hourIndex
+        return LocalTime.of(hourOfDayOf(display, isPm = w.periodIndex == 1, cycle), minute)
     }
 
     private fun assertRoundTrip(pattern: String, expected: Map<String, String>) {
-        val zero = parseTimePattern(pattern).hourStartsAtZero
+        val cycle = if (parseTimePattern(pattern).hourStartsAtZero) HourCycle.H11 else HourCycle.H12
         expected.forEach { (text, label) ->
             val time = LocalTime.parse(text)
-            val wheel = toWheel(time, zero)
+            val wheel = toWheel(time, cycle)
             assertEquals("$pattern $text", label, wheel.label)
-            assertEquals("$pattern $text", time, fromWheel(wheel, time.minute, zero))
+            assertEquals("$pattern $text", time, fromWheel(wheel, time.minute, cycle))
         }
     }
 
@@ -162,17 +163,81 @@ class TimePickerLocaleTest {
     @Test
     fun kPattern_everyWheelPositionMapsToDistinctHour() {
         // 휠 0..11 × 오전/오후 = 24칸이 0..23시에 하나씩 대응한다 (午前 0 → 午後 0 경계 포함)
-        val hours = (0..1).flatMap { p -> (0..11).map { i -> fromWheel(Wheel(i, p, ""), 0, true).hour } }
+        val hours = (0..1).flatMap { p -> (0..11).map { i -> fromWheel(Wheel(i, p, ""), 0, HourCycle.H11).hour } }
         assertEquals((0..23).toList(), hours)
     }
 
     @Test
     fun explicitFormats_unchanged() {
-        assertEquals(1..12, hourRange(is24Hour = false, startsAtZero = false))
-        assertEquals(0..23, hourRange(is24Hour = true, startsAtZero = false))
-        assertEquals(12, displayHourOf(0, is24Hour = false, startsAtZero = false))
-        assertEquals(12, displayHourOf(12, is24Hour = false, startsAtZero = false))
-        assertEquals(0, displayHourOf(0, is24Hour = true, startsAtZero = false))
-        assertEquals(23, hourOfDayOf(23, isPm = false, is24Hour = true))
+        assertEquals(1..12, hourRange(HourCycle.H12))
+        assertEquals(0..23, hourRange(HourCycle.H23))
+        assertEquals(12, displayHourOf(0, HourCycle.H12))
+        assertEquals(12, displayHourOf(12, HourCycle.H12))
+        assertEquals(0, displayHourOf(0, HourCycle.H23))
+        assertEquals(23, hourOfDayOf(23, isPm = false, HourCycle.H23))
+    }
+
+    @Test
+    fun hourRange_followsHourCycle() {
+        assertEquals(0..11, hourRange(HourCycle.H11))
+        assertEquals(1..12, hourRange(HourCycle.H12))
+        assertEquals(0..23, hourRange(HourCycle.H23))
+        assertEquals(1..24, hourRange(HourCycle.H24))
+    }
+
+    @Test
+    fun h24_showsMidnightAs24() {
+        assertEquals(24, displayHourOf(0, HourCycle.H24))
+        assertEquals(1, displayHourOf(1, HourCycle.H24))
+        assertEquals(23, displayHourOf(23, HourCycle.H24))
+        assertEquals(0, hourOfDayOf(24, isPm = false, HourCycle.H24))
+        assertEquals(23, hourRange(HourCycle.H24).indexOf(displayHourOf(0, HourCycle.H24)))
+    }
+
+    @Test
+    fun everyMinute_roundTripsThroughEveryHourCycle() {
+        HourCycle.entries.forEach { cycle ->
+            val range = hourRange(cycle)
+            (0 until 24 * 60).forEach { m ->
+                val time = LocalTime.of(m / 60, m % 60)
+                val display = displayHourOf(time.hour, cycle)
+                assertTrue("$cycle $time → $display !in $range", display in range)
+                val isPm = !cycle.is24Hour && time.hour >= 12
+                assertEquals("$cycle $time", time, LocalTime.of(hourOfDayOf(display, isPm, cycle), time.minute))
+            }
+        }
+    }
+
+    @Test
+    fun hourCycle_winsOverFormatAndSkipsDevice() {
+        val device: () -> Boolean = { throw AssertionError("device setting must not be read") }
+        HourCycle.entries.forEach { cycle ->
+            TimeFormat.entries.forEach { format ->
+                assertEquals("$format", cycle, resolveHourCycle(format, cycle, device, device))
+            }
+        }
+    }
+
+    @Test
+    fun noHourCycle_keepsFormatBehavior() {
+        val unread: () -> Boolean = { throw AssertionError("must not be read") }
+        fun resolve(format: TimeFormat, system24: () -> Boolean, localeK: () -> Boolean) =
+            resolveHourCycle(format, hourCycle = null, systemIs24Hour = system24, localeStartsAtZero = localeK)
+
+        assertEquals(HourCycle.H12, resolve(TimeFormat.HOUR_12, system24 = unread, localeK = unread))
+        assertEquals(HourCycle.H23, resolve(TimeFormat.HOUR_24, system24 = unread, localeK = unread))
+        assertEquals(HourCycle.H23, resolve(TimeFormat.SYSTEM, system24 = { true }, localeK = unread))
+        assertEquals(HourCycle.H11, resolve(TimeFormat.SYSTEM, system24 = { false }, localeK = { true }))
+        assertEquals(HourCycle.H12, resolve(TimeFormat.SYSTEM, system24 = { false }, localeK = { false }))
+    }
+
+    @Test
+    fun hourDigits_followLocalePatternUnlessFixedFormat() {
+        assertTrue(usesLocaleHourDigits(TimeFormat.SYSTEM, hourCycle = null))
+        assertFalse(usesLocaleHourDigits(TimeFormat.HOUR_12, hourCycle = null))
+        assertFalse(usesLocaleHourDigits(TimeFormat.HOUR_24, hourCycle = null))
+        HourCycle.entries.forEach { cycle ->
+            TimeFormat.entries.forEach { format -> assertTrue("$format $cycle", usesLocaleHourDigits(format, cycle)) }
+        }
     }
 }
