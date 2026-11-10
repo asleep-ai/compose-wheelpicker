@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performTouchInput
@@ -123,12 +124,17 @@ class PickerInteractionTest {
                     itemHeight = 48.dp,
                     locale = Locale.US,
                     hourCycle = HourCycle.H24,
+                    modifier = Modifier.testTag("time"),
                 )
             }
         }
 
-        rule.onNodeWithText("24").performTouchInput {
-            swipe(start = center, end = center - Offset(0f, 72.dp.toPx()), durationMillis = 600)
+        val pickerLeft = rule.onNodeWithTag("time").fetchSemanticsNode().boundsInRoot.left
+        val hourX = rule.onAllNodesWithText("24").fetchSemanticsNodes()
+            .minOf { it.boundsInRoot.center.x } - pickerLeft
+        rule.onNodeWithTag("time").performTouchInput {
+            val start = Offset(hourX, center.y)
+            swipe(start = start, end = start - Offset(0f, 72.dp.toPx()), durationMillis = 600)
         }
         rule.waitForIdle()
 
